@@ -1,0 +1,81 @@
+datasource newdb {
+  provider = "mysql"
+  url      = env("NEW_DATABASE_URL")
+}
+
+generator newDbClient {
+  provider = "prisma-client-js"
+  output   = "../../generated/newDb"
+}
+
+model Task {
+  id           Int       @id @default(autoincrement())
+  taskNumber   String?
+  taskTitle    String
+  raisedTo     Int
+  departmentId Int
+  categoryId   Int
+  closeDate    DateTime
+  taskBody     String?
+  status       String    @default("OPEN")
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @updatedAt
+
+  Department Department   @relation(fields: [departmentId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Category   Category     @relation(fields: [categoryId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Attachment Attachment[]
+  ChatRoom   ChatRoom[]
+}
+
+model Department {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  Category Category[]
+  Task     Task[]
+}
+
+model Category {
+  id           Int       @id @default(autoincrement())
+  name         String
+  departmentId Int
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @updatedAt
+
+  Task       Task[]
+  Department Department @relation(fields: [departmentId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model ChatRoom {
+  id        Int       @id @default(autoincrement())
+  roomId    String    @unique
+  taskId    Int
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  Task Task @relation(fields: [taskId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model Chat {
+  id        Int       @id @default(autoincrement())
+  roomId    String
+  userId    Int
+  message   String
+  type      String
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@index([roomId])
+}
+
+model Attachment {
+  id        Int       @id @default(autoincrement())
+  taskId    Int
+  path      String
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  Task Task @relation(fields: [taskId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
