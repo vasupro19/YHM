@@ -17,41 +17,21 @@ const init = async () => {
       roleId: 1
     };
 
-    const userConfig = [
-      {
-        userId: 1,
-        menuId: 1
-      },
-      {
-        userId: 1,
-        menuId: 2
-      },
-      {
-        userId: 1,
-        menuId: 3
-      },
-      {
-        userId: 1,
-        menuId: 4
-      },
-      {
-        userId: 1,
-        menuId: 5
-      },
-      {
-        userId: 1,
-        menuId: 6
-      }
-    ];
+    // the admin's screens are picked by address: menu ids differ from one database to another
+    const adminRole = await prisma.role.findFirst({ where: { name: 'ADMIN' } });
+    if (!adminRole) throw new Error('Run the role seeder first');
+    data.roleId = adminRole.id;
+    const adminMenus = await prisma.menu.findMany({ where: { url: { in: ['/master/role', '/master/user', '/master/client'] } }, select: { id: true } });
+    if (adminMenus.length !== 3) throw new Error('Run the menu seeder first');
 
     await prisma.user.deleteMany();
     await prisma.userConfig.deleteMany();
     console.log('User table cleared.');
 
     // Insert new user
-    await prisma.user.create({ data });
+    const admin = await prisma.user.create({ data });
     await prisma.userConfig.createMany({
-      data: userConfig,
+      data: adminMenus.map((m) => ({ userId: admin.id, menuId: m.id })),
       skipDuplicates: true
     });
     console.log('Seeder record added!');
