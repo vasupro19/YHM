@@ -29,7 +29,11 @@ const httpServer = server.listen(PORT || 1310, async (error) => {
   }
 });
 
-app.use('/File', express.static(path.join(__dirname, 'File')));
+// uploaded files can never run as a page: no sniffing, no scripts, sandboxed
+app.use('/File', (req, res, next) => {
+  res.set({ 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox", 'Cross-Origin-Resource-Policy': 'same-site' });
+  next();
+}, express.static(path.join(__dirname, 'File'), { index: false, dotfiles: 'deny' }));
 //? routes
 require('./Routes')();
 

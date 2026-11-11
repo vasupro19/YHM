@@ -7,6 +7,8 @@ const DepartmentRoute = require('./department.routes');
 const CategoryRoute = require('./category.routes');
 const TaskRoute = require('./task.routes');
 const FileOperationRoute = require('./fileOperation.routes');
+const HotelRoute = require('./hotel.routes');
+const PublicRoute = require('./public.routes');
 const app = require('../app');
 
 //! always remove  before pushing to server
@@ -20,6 +22,8 @@ function appRouter() {
   app.use('/v1/category', CategoryRoute);
   app.use('/v1/task', TaskRoute);
   app.use('/v1/fileOperation', FileOperationRoute);
+  app.use('/v1/hotel', HotelRoute);
+  app.use('/v1/public', PublicRoute);
 
   //\\ ==============================|| END: UI MASTERS ROUTES ||============================== //\\
 }

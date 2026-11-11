@@ -3,6 +3,12 @@ const { IST } = require('../Helpers/dateTime.helper');
 const { generateCustomError } = require('../Helpers/error.helper');
 const AuthHelper = require('../Helpers/auth.helper');
 const Logger = require('../Helpers/logger');
+const { publicUser } = require('../Helpers/safeUser.helper');
+const crypto = require('crypto');
+const { sendMail } = require('../Helpers/mailer');
+
+const sha256 = (v) => crypto.createHash('sha256').update(v).digest('hex');
+const validPassword = (p) => typeof p === 'string' && p.length >= 8 && p.length <= 72;
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -47,7 +53,7 @@ const login = async (req, res, next) => {
     });
 
     Response.success(res, {
-      data: { accessToken, user, refreshToken },
+      data: { accessToken, user: publicUser(user), refreshToken },
       message: 'Logged-In Successfully'
     });
   } catch (error) {
@@ -130,7 +136,7 @@ const getUser = async (req, res, next) => {
     }
 
     Response.success(res, {
-      data: { user, date: IST() },
+      data: { user: publicUser(user), date: IST() },
       message: 'Logged-In User Data Found'
     });
   } catch (error) {
@@ -139,4 +145,73 @@ const getUser = async (req, res, next) => {
   }
 };
 
-module.exports = { login, logout, generateTokens, getUser };
+// always answers the same way, so nobody can use it to find out which emails have accounts
+const forgotPassword = async (req, res, next) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const reply = () => Response.success(res, { message: 'If that email has an account, a reset link has been sent.' });
+    if (!email) return reply();
+
+    const user = await prisma.user.findFirst({ where: { email, active: true } });
+    if (!user) return reply();
+
+    const token = crypto.randomBytes(32).toString('hex');
+    await prisma.user.update({ where: { id: user.id }, data: { passwordResetHash: sha256(token), passwordResetExpires: new Date(Date.now() + 30 * 60 * 1000) } });
+
+    const link = `${process.env.APP_URL || 'http://localhost:3001'}/reset-password?token=${token}`;
+    try {
+      await sendMail({
+      to: user.email,
+      subject: 'Reset your YHM password',
+      text: `Hello ${user.name},\n\nUse this link to choose a new password. It works for 30 minutes:\n${link}\n\nIf you did not ask for this, ignore this email.`,
+      html: `<p>Hello ${user.name},</p><p><a href="${link}">Choose a new password</a>. The link works for 30 minutes.</p><p>If you did not ask for this, ignore this email.</p>`
+      });
+    } catch (mailError) {
+      // the person sees the same reply either way; the server log tells the owner what went wrong
+      Logger.error(`password reset email to ${user.email} failed: ${mailError.message}`);
+    }
+    return reply();
+  } catch (error) {
+    Logger.error(error.message + ' at forgotPassword function auth controller');
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body || {};
+    if (!token || typeof token !== 'string') return Response.badRequest(res, { message: 'This reset link is not valid.' });
+    if (!validPassword(password)) return Response.badRequest(res, { message: 'Choose a password of 8 to 72 characters.' });
+
+    const user = await prisma.user.findFirst({ where: { passwordResetHash: sha256(token), passwordResetExpires: { gt: new Date() }, active: true } });
+    if (!user) return Response.badRequest(res, { message: 'This reset link is invalid or has expired. Ask for a new one.' });
+
+    // changing the password also signs out every device
+    await prisma.user.update({ where: { id: user.id }, data: { password: await AuthHelper.generateHash(password), passwordResetHash: null, passwordResetExpires: null, refreshToken: null } });
+    return Response.success(res, { message: 'Password changed. You can sign in now.' });
+  } catch (error) {
+    Logger.error(error.message + ' at resetPassword function auth controller');
+    next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!validPassword(newPassword)) return Response.badRequest(res, { message: 'Choose a new password of 8 to 72 characters.' });
+    const user = await prisma.user.findUnique({ where: { id: parseInt(req.query.auth_user_id) } });
+    if (!user) return Response.badRequest(res, { message: 'user not found' });
+    try {
+      await AuthHelper.compareHash(String(currentPassword || ''), user.password);
+    } catch (e) {
+      return Response.badRequest(res, { message: 'Your current password is not correct.' });
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { password: await AuthHelper.generateHash(newPassword) } });
+    return Response.success(res, { message: 'Password changed.' });
+  } catch (error) {
+    Logger.error(error.message + ' at changePassword function auth controller');
+    next(error);
+  }
+};
+
+module.exports = { login, logout, generateTokens, getUser, forgotPassword, resetPassword, changePassword };

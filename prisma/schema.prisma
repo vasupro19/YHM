@@ -19,6 +19,8 @@ model User {
   whatsAppNo   String?
   refreshToken String?
   apiToken     String?
+  passwordResetHash    String?
+  passwordResetExpires DateTime?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

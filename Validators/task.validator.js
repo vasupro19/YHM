@@ -5,7 +5,7 @@ const taskValidator = Joi.object({
   raisedTo: Joi.number().required(),
   departmentId: Joi.number().required(),
   closeDate: Joi.string().required(),
-  categoryId: Joi.number(),
+  categoryId: Joi.number().required(),
   closeDate: Joi.string(),
   taskBody: Joi.string()
 }).unknown(true);

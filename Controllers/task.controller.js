@@ -115,7 +115,8 @@ const getTask = async (req, res) => {
       const [attachments] = await clientDb.query(`SELECT path FROM Attachment WHERE taskId = ?`, [task.id]);
       task.attachments = attachments.map((a) => a.path);
       task.raisedTo_name = user.name;
-      task.closeDate = new Date(task.closeDate).toDateString();
+      const due = new Date(task.closeDate);
+      task.closeDate = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
       response.push(task);
     }
 
@@ -149,9 +150,10 @@ const updateTask = async (req, res) => {
 
     const updatePayload = {
       ...req.body,
-      closeDate: new Date(req.body.closeDate),
       updatedAt: new Date()
     };
+
+    if (req.body.closeDate) updatePayload.closeDate = new Date(req.body.closeDate);
 
     const attachments = updatePayload.attachments;
 
@@ -168,9 +170,11 @@ const updateTask = async (req, res) => {
       }
     }
 
-    if (attachmentData?.length) {
+    if (Array.isArray(attachments)) {
       await clientDb.query(`DELETE FROM Attachment WHERE taskId = ?`, [Number(id)]);
+    }
 
+    if (attachmentData?.length) {
       const attachmentQuery = crudHelper.queryOfBulkInsert('Attachment', attachmentData);
 
       await clientDb.query(attachmentQuery.sql, attachmentQuery.values);

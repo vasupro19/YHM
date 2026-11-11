@@ -19,7 +19,8 @@ const uploadFileFromMulter = (file, folder) => {
         fs.mkdirSync(uploadBasePath, { recursive: true });
       }
 
-      const extension = path.extname(file.originalname);
+      // the extension comes from the checked file type, never from the name the uploader chose
+      const extension = `.${require('./multer.helper').ALLOWED[file.mimetype] || 'bin'}`;
       const fileName = `${Math.floor(Math.random() * 1e9)}-${Date.now()}${extension}`;
       const fullPath = path.join(uploadBasePath, fileName);
 
@@ -67,7 +68,9 @@ const uploadBase64File = (base64String, folder) => {
       const base64Data = matches[2];
       const buffer = Buffer.from(base64Data, 'base64');
 
-      const extension = mimeType.split('/')[1] || 'bin';
+      const extension = require('./multer.helper').ALLOWED[mimeType];
+      if (!extension) return reject(new Error('Only images and PDF files can be uploaded.'));
+      if (buffer.length > 8 * 1024 * 1024) return reject(new Error('The file is larger than 8 MB.'));
       const fileName = `${Math.floor(Math.random() * 1e9)}-${Date.now()}.${extension}`;
 
       const uploadDir = path.join(__dirname, '..', 'File', folder.toLowerCase());

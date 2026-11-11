@@ -44,9 +44,11 @@ const createRole = async (req, res) => {
 // get role by different query parameters
 const getRole = async (req, res) => {
   try {
-    const { auth_user_id, user_role, ...query } = req.query;
+    const { auth_user_id, user_role } = req.query;
+    const query = {};
+    if (req.query.name && typeof req.query.name === 'string') query.name = req.query.name;
 
-    if (user_role !== ADMIN_ROLE_ID) {
+    if (Number(user_role) !== ADMIN_ROLE_ID) {
       const user = await DB.read(prisma.user, { id: auth_user_id });
       const clientRoleMapping = await DB.findDetails(prisma.clientRoleMapping, {
         clientId: user.clientId

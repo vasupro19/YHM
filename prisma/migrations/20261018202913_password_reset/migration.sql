@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `User` ADD COLUMN `passwordResetExpires` DATETIME(3) NULL,
+    ADD COLUMN `passwordResetHash` VARCHAR(191) NULL;
+

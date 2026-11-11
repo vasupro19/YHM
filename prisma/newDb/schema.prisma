@@ -79,3 +79,224 @@ model Attachment {
 
   Task      Task @relation(fields: [taskId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 }
+
+// ================= HOTEL =================
+
+model HotelSetting {
+  id            Int      @id @default(1)
+  hotelName     String   @default("")
+  address       String?   @newdb.Text
+  phone         String?
+  email         String?
+  gstin         String?
+  checkInTime   String   @default("12:00")
+  checkOutTime  String   @default("11:00")
+  roomGstLow    Decimal  @default(5) @newdb.Decimal(5, 2)
+  roomGstHigh   Decimal  @default(18) @newdb.Decimal(5, 2)
+  gstThreshold  Decimal  @default(7500) @newdb.Decimal(10, 2)
+  bookingPrefix String   @default("BK")
+  invoicePrefix String   @default("INV")
+  logoPath      String?
+  policy        String?   @newdb.Text
+  onboardedAt   DateTime?
+  upiId         String?
+  updatedAt     DateTime? @updatedAt
+}
+
+model RoomType {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?   @newdb.Text
+  maxAdults   Int       @default(2)
+  maxChildren Int       @default(1)
+  basePrice   Decimal   @newdb.Decimal(10, 2)
+  amenities   String?   @newdb.Text
+  active      Boolean   @default(true)
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  rooms Room[]
+  rates RoomRate[]
+}
+
+model Room {
+  id           Int       @id @default(autoincrement())
+  roomNumber   String    @unique
+  floor        String?
+  roomTypeId   Int
+  status       String    @default("CLEAN")
+  outOfService Boolean   @default(false)
+  notes        String?   @newdb.Text
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @updatedAt
+
+  roomType RoomType  @relation(fields: [roomTypeId], references: [id])
+  bookings Booking[]
+}
+
+model RoomRate {
+  id         Int      @id @default(autoincrement())
+  roomTypeId Int
+  date       DateTime @newdb.Date
+  price      Decimal  @newdb.Decimal(10, 2)
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, date])
+}
+
+model Customer {
+  id          Int       @id @default(autoincrement())
+  type        String    @default("INDIVIDUAL")
+  name        String
+  phone       String?
+  email       String?
+  companyName String?
+  gstin       String?
+  address     String?   @newdb.Text
+  idType      String?
+  idNumber    String?
+  notes       String?   @newdb.Text
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  bookings Booking[]
+}
+
+model Booking {
+  id            Int       @id @default(autoincrement())
+  bookingNumber String    @unique
+  customerId    Int
+  roomId        Int
+  checkIn       DateTime  @newdb.Date
+  checkOut      DateTime  @newdb.Date
+  adults        Int       @default(1)
+  children      Int       @default(0)
+  status        String    @default("CONFIRMED")
+  source        String    @default("DIRECT")
+  roomTotal     Decimal   @default(0) @newdb.Decimal(12, 2)
+  discount      Decimal   @default(0) @newdb.Decimal(12, 2)
+  notes         String?   @newdb.Text
+  checkedInAt   DateTime?
+  checkedOutAt  DateTime?
+  createdBy     Int?
+  shareToken    String?   @unique
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @updatedAt
+
+  customer Customer       @relation(fields: [customerId], references: [id])
+  room     Room           @relation(fields: [roomId], references: [id])
+  nights   BookingNight[]
+  charges  Charge[]
+  payments Payment[]
+  invoice  Invoice?
+
+  @@index([roomId, checkIn, checkOut])
+  @@index([status])
+}
+
+model BookingNight {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int
+  date       DateTime @newdb.Date
+  price      Decimal  @newdb.Decimal(10, 2)
+  gstPercent Decimal  @default(0) @newdb.Decimal(5, 2)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, date])
+}
+
+model Charge {
+  id          Int       @id @default(autoincrement())
+  bookingId   Int
+  category    String
+  description String
+  quantity    Decimal   @default(1) @newdb.Decimal(8, 2)
+  unitPrice   Decimal   @newdb.Decimal(10, 2)
+  gstPercent  Decimal   @default(0) @newdb.Decimal(5, 2)
+  chargeDate  DateTime  @newdb.Date
+  createdBy   Int?
+  createdAt   DateTime? @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        Int       @id @default(autoincrement())
+  bookingId Int
+  amount    Decimal   @newdb.Decimal(12, 2)
+  method    String    @default("CASH")
+  reference String?
+  note      String?   @newdb.Text
+  paidAt    DateTime  @default(now())
+  createdBy Int?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id              Int       @id @default(autoincrement())
+  invoiceNumber   String    @unique
+  bookingId       Int       @unique
+  issuedAt        DateTime  @default(now())
+  roomSubtotal    Decimal   @newdb.Decimal(12, 2)
+  chargesSubtotal Decimal   @newdb.Decimal(12, 2)
+  discount        Decimal   @newdb.Decimal(12, 2)
+  taxTotal        Decimal   @newdb.Decimal(12, 2)
+  total           Decimal   @newdb.Decimal(12, 2)
+  paid            Decimal   @newdb.Decimal(12, 2)
+  balance         Decimal   @newdb.Decimal(12, 2)
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+model Staff {
+  id            Int       @id @default(autoincrement())
+  name          String
+  phone         String?
+  email         String?
+  designation   String
+  department    String?
+  joinDate      DateTime? @newdb.Date
+  monthlySalary Decimal   @newdb.Decimal(10, 2)
+  active        Boolean   @default(true)
+  address       String?   @newdb.Text
+  idNumber      String?
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @updatedAt
+
+  salaries SalaryPayment[]
+}
+
+model SalaryPayment {
+  id         Int      @id @default(autoincrement())
+  staffId    Int
+  month      String
+  baseSalary Decimal  @newdb.Decimal(10, 2)
+  bonus      Decimal  @default(0) @newdb.Decimal(10, 2)
+  deductions Decimal  @default(0) @newdb.Decimal(10, 2)
+  netPaid    Decimal  @newdb.Decimal(10, 2)
+  method     String   @default("CASH")
+  paidOn     DateTime @newdb.Date
+  note       String?   @newdb.Text
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, month])
+}
+
+
+model AuditLog {
+  id        Int       @id @default(autoincrement())
+  userId    Int?
+  userName  String?
+  action    String
+  entity    String
+  entityId  Int?
+  summary   String
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}

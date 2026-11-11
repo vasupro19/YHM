@@ -11,11 +11,16 @@ const ReqLogger = require('./Middleware/reqLogger.middleware');
 const checkReqMethod = require('./Middleware/reqMethod.middleware');
 const bodyParser = require('body-parser');
 
+const { apiLimiter } = require('./Middleware/rateLimit.middleware');
+
 const app = express();
+// behind nginx/a load balancer set TRUST_PROXY=1 so limits apply to the real visitor address
+if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // ! request security middlewares
 app.use(helmet());
+app.use(apiLimiter);
 app.use(xss());
 app.use(
   cors({

@@ -113,7 +113,7 @@ async function compareHash(userPassword, hash) {
   return new Promise(async (resolve, reject) => {
     try {
       const match = await bcrypt.compare(userPassword, hash);
-      if (match) resolve(true);
+      if (match) return resolve(true);
 
       await generateCustomError(
         "incorrect username or password",

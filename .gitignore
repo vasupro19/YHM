@@ -27,3 +27,9 @@ pnpm-debug.log*
 *.sln
 *.sw?
 apiDoc.rest
+# secrets and local data: never commit
+.env
+.env.*
+!env.example
+backups/
+prisma/temp/

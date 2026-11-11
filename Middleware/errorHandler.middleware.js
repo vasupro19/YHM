@@ -35,6 +35,16 @@ function handleError(error, req, res, next) {
       status = error.resCode || status;
     }
 
+    //? upload problems (wrong type, too big) are the user's to fix, so say what they are
+    if (error?.status === 400 && error.message) {
+      message = error.message;
+      status = 400;
+    }
+    if (error?.code === 'LIMIT_FILE_SIZE') {
+      message = 'The file is larger than 8 MB.';
+      status = 400;
+    }
+
     //? checking if a res header is set for error
     if (error?.resHeader) res.set("x-server-errortype", error.resHeader);
 

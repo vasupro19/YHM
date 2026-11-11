@@ -2,6 +2,7 @@ const { getDynamicConnectionForDatabase } = require("../Helpers/db.helper");
 const Logger = require("../Helpers/logger");
 const Response = require("../Helpers/response.helper");
 const DB = require("../Helpers/crud.helper");
+const { ADMIN_ROLE_ID } = require("../Constants/constant");
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
@@ -28,6 +29,14 @@ const dynamicDbConnectionMiddleware = async (req, res, next) => {
   try {
     const client = await DB.read(prisma.client, { id: Number(clientId) });
 
+    // a non-admin user may only reach their own client's data
+    if (Number(req.query.user_role) !== ADMIN_ROLE_ID) {
+      const me = await DB.read(prisma.user, { id: Number(req.query.auth_user_id) });
+      if (!me || me.clientId !== Number(clientId)) {
+        return Response.unauthorized(res, { message: 'Access denied', status: 403 });
+      }
+    }
+
     dbName = client?.code;
 
     if (!dbName) {
@@ -38,6 +47,7 @@ const dynamicDbConnectionMiddleware = async (req, res, next) => {
     }
 
     req.dbConnection = await getDynamicConnectionForDatabase(dbName);
+    req.clientId = Number(clientId);
     next();
   } catch (error) {
     Logger.error(error.message + " Failed to initialize Prisma client for DB");

@@ -11,7 +11,7 @@ const { PrismaClient } = require("@prisma/client");
 async function createNewDatabase(dbName) {
   try {
     const connection = await mysql.createConnection({
-      host: process.env.DB_HOST,
+      ...parseHost(process.env.DB_HOST),
       user: process.env.DB_USER,
       password: process.env.DB_PASS,
     });
@@ -66,20 +66,49 @@ async function runMigrationForDatabase(dbName) {
   }
 }
 
+function parseHost(hostValue) {
+  const [host, port] = String(hostValue || "localhost").split(":");
+  return { host, port: port ? Number(port) : 3306 };
+}
+
+// one pool per tenant database, shared by every request
+const tenantPools = new Map();
+
 async function getDynamicConnectionForDatabase(dbName) {
-  try {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || "localhost",
+  let pool = tenantPools.get(dbName);
+  if (!pool) {
+    pool = mysql.createPool({
+      ...parseHost(process.env.DB_HOST),
       user: process.env.DB_USER || "root",
       password: process.env.DB_PASS || "",
       database: dbName,
+      connectionLimit: 10,
+      dateStrings: ['DATE'], // DATE columns come back as 'YYYY-MM-DD', never shifted by timezone
+      decimalNumbers: true,
     });
-    return connection;
-  } catch (error) {
-    Logger.error(
-      "Error creating database or running migration: " + error.message
-    );
+    tenantPools.set(dbName, pool);
   }
+  // controllers call end() when done; the pool stays open, so end() is a no-op
+  return {
+    query: (...args) => pool.query(...args),
+    execute: (...args) => pool.execute(...args),
+    end: async () => {},
+    // runs fn(conn) inside one transaction; rolls back if fn throws
+    transaction: async (fn) => {
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        const result = await fn(conn);
+        await conn.commit();
+        return result;
+      } catch (error) {
+        await conn.rollback();
+        throw error;
+      } finally {
+        conn.release();
+      }
+    },
+  };
 }
 
 module.exports = {
