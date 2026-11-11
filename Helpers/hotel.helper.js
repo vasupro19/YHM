@@ -85,6 +85,14 @@ const computeBill = ({ booking, nights, charges, payments }) => {
     const taxable = round2(n.price * factor);
     return { kind: 'ROOM', date: n.date, description: 'Room tariff', quantity: 1, unitPrice: n.price, amount: n.price, taxable, gstPercent: n.gstPercent, tax: round2((taxable * n.gstPercent) / 100) };
   });
+  // spreading a discount over nights leaves paisa differences; put them on the last night so the lines add up exactly
+  const roomTaxable = round2(roomSubtotal - discount);
+  const drift = round2(roomTaxable - roomLines.reduce((s, l) => s + l.taxable, 0));
+  if (drift && roomLines.length) {
+    const last = roomLines[roomLines.length - 1];
+    last.taxable = round2(last.taxable + drift);
+    last.tax = round2((last.taxable * last.gstPercent) / 100);
+  }
   const chargeLines = charges.map((c) => {
     const amount = round2(c.quantity * c.unitPrice);
     return { kind: 'CHARGE', id: c.id, category: c.category, date: c.chargeDate, description: c.description, quantity: c.quantity, unitPrice: c.unitPrice, amount, taxable: amount, gstPercent: c.gstPercent, tax: round2((amount * c.gstPercent) / 100) };

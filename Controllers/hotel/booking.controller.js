@@ -71,7 +71,7 @@ const listBookings = handler(async (req, res, db) => {
   }
   const [rows] = await db.query(
     `SELECT b.id, b.bookingNumber, b.customerId, b.roomId, b.checkIn, b.checkOut, b.adults, b.children, b.status, b.source, b.discount, b.createdAt,
-            c.name AS customerName, c.type AS customerType, c.companyName, r.roomNumber, t.name AS roomTypeName
+            c.name AS customerName, c.phone AS customerPhone, c.type AS customerType, c.companyName, r.roomNumber, t.name AS roomTypeName
        FROM Booking b JOIN Customer c ON c.id = b.customerId JOIN Room r ON r.id = b.roomId JOIN RoomType t ON t.id = r.roomTypeId
       ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY b.checkIn DESC, b.id DESC LIMIT 500`,
     values
