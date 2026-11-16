@@ -9,6 +9,8 @@ const staff = require('../Controllers/hotel/staff.controller');
 const report = require('../Controllers/hotel/report.controller');
 const activity = require('../Controllers/hotel/activity.controller');
 const setup = require('../Controllers/hotel/setup.controller');
+const control = require('../Controllers/hotel/control.controller');
+const reg = require('../Controllers/hotel/register.controller');
 
 const router = express.Router();
 
@@ -65,6 +67,21 @@ router
   .get('/dashboard', need(...HOTEL_MENUS), report.dashboard)
   .get('/reports', need('/hotel/reports'), report.report)
   .get('/activity', need('/hotel/activity'), activity.list)
+
+  // cash drawer: anyone who takes payments closes their own; the owner sees every close
+  .get('/cash/drawer', need('/hotel/cash', '/hotel/bookings'), control.drawer)
+  .post('/cash/close', need('/hotel/cash', '/hotel/bookings'), control.closeDrawer)
+  .get('/cash/closes', need('/hotel/day-report'), control.closes)
+  .get('/day-report', need('/hotel/day-report'), control.dayReport)
+
+  // guest register, ID photos and Form C
+  .put('/bookings/:id/guest-details', need(...FRONT, '/hotel/register'), reg.saveGuestDetails)
+  .post('/customers/:id/id-photo/:side', need(...FRONT, '/hotel/customers', '/hotel/register'), reg.uploadIdPhoto)
+  .get('/customers/:id/id-photo/:side', need(...FRONT, '/hotel/customers', '/hotel/register'), reg.getIdPhoto)
+  .delete('/customers/:id/id-photo/:side', need(...FRONT, '/hotel/customers', '/hotel/register'), reg.removeIdPhoto)
+  .get('/register', need('/hotel/register'), reg.register)
+  .get('/form-c', need('/hotel/register'), reg.formC)
+  .post('/bookings/:id/form-c', need('/hotel/register'), reg.markFormC)
 
   .post('/onboarding', need('/hotel/settings'), setup.onboard)
   .post('/import/:kind', need('/hotel/import'), setup.importData);

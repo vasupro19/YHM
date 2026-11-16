@@ -6,6 +6,8 @@ const data = [
   { label: 'Calendar', icon: 'CalendarMonth', url: '/hotel/calendar', group: 'frontdesk' },
   { label: 'Bookings', icon: 'BookOnline', url: '/hotel/bookings', group: 'frontdesk' },
   { label: 'Guests', icon: 'People', url: '/hotel/customers', group: 'frontdesk' },
+  { label: 'Guest register', icon: 'Badge', url: '/hotel/register', group: 'frontdesk' },
+  { label: 'Cash drawer', icon: 'Payments', url: '/hotel/cash', group: 'frontdesk' },
   // ---- property ----
   { label: 'Rooms', icon: 'Hotel', url: '/hotel/rooms', group: 'property' },
   { label: 'Room types & rates', icon: 'Sell', url: '/hotel/room-types', group: 'property' },
@@ -13,6 +15,7 @@ const data = [
   { label: 'Staff', icon: 'Badge', url: '/hotel/staff', group: 'people' },
   { label: 'Payroll', icon: 'Payments', url: '/hotel/payroll', group: 'people' },
   // ---- insights ----
+  { label: 'Day report', icon: 'Assessment', url: '/hotel/day-report', group: 'reports' },
   { label: 'Reports', icon: 'Assessment', url: '/hotel/reports', group: 'reports' },
   // ---- setup ----
   { label: 'Hotel settings', icon: 'Settings', url: '/hotel/settings', group: 'master' },

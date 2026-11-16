@@ -19,4 +19,4 @@ const audit = async (req, db, action, entity, entityId, summary) => {
   }
 };
 
-module.exports = { audit };
+module.exports = { audit, nameOf };

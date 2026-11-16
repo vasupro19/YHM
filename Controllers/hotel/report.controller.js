@@ -32,6 +32,16 @@ const dashboard = handler(async (req, res, db) => {
   const bills = await H.attachBills(db, owing);
   const outstanding = H.round2(bills.reduce((s, b) => s + Math.max(b.balance, 0), 0));
 
+  // register and Form C gaps for guests in the house now
+  const [regRows] = await db.query(
+    `SELECT b.id, b.comingFrom, c.phone, c.address, c.idType, c.idNumber, c.idFront, c.nationality, c.foreignDetails, b.formCSubmittedAt
+       FROM Booking b JOIN Customer c ON c.id = b.customerId WHERE b.status = 'CHECKED_IN'`
+  );
+  const G = require('../../Helpers/guest.helper');
+  const registerIncomplete = regRows.filter((r) => G.missingDetails(r, r).length).length;
+  const formCDue = regRows.filter((r) => !G.isIndian(r.nationality) && !r.formCSubmittedAt).length;
+  const [[cash]] = await db.query("SELECT COALESCE(SUM(amount),0) AS amount, COUNT(DISTINCT createdBy) AS people FROM Payment WHERE method = 'CASH' AND cashCloseId IS NULL");
+
   // money figures are only for people who may open Reports
   const seesMoney = await canOpen(req, '/hotel/reports');
   const todayOcc = occ[0]?.occupied || 0;
@@ -50,7 +60,10 @@ const dashboard = handler(async (req, res, db) => {
       housekeeping: Object.fromEntries(hk.map((h) => [h.status, h.n])),
       paymentsThisMonth: seesMoney ? pay.total : null,
       roomRevenueThisMonth: seesMoney ? roomRev.total : null,
-      outstanding: seesMoney ? outstanding : null
+      outstanding: seesMoney ? outstanding : null,
+      registerIncomplete,
+      formCDue,
+      uncountedCash: seesMoney ? { amount: cash.amount, people: cash.people } : null
     }
   });
 });

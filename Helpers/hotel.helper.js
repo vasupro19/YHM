@@ -118,6 +118,7 @@ const computeBill = ({ booking, nights, charges, payments }) => {
 const loadBooking = async (db, id) => {
   const [[booking]] = await db.query(
     `SELECT b.*, c.name AS customerName, c.type AS customerType, c.phone AS customerPhone, c.email AS customerEmail, c.companyName, c.gstin AS customerGstin, c.address AS customerAddress,
+            c.nationality, c.gender, c.dob, c.careOf, c.idType, c.idNumber, c.foreignDetails, c.idFront IS NOT NULL AS hasIdFront, c.idBack IS NOT NULL AS hasIdBack,
             r.roomNumber, r.roomTypeId, t.name AS roomTypeName
        FROM Booking b
        JOIN Customer c ON c.id = b.customerId
@@ -132,6 +133,11 @@ const loadBooking = async (db, id) => {
   const [payments] = await db.query('SELECT * FROM Payment WHERE bookingId = ? ORDER BY paidAt, id', [id]);
   const [[invoice]] = await db.query('SELECT * FROM Invoice WHERE bookingId = ?', [id]);
   const bill = computeBill({ booking, nights, charges, payments });
+  if (typeof booking.foreignDetails === 'string') booking.foreignDetails = JSON.parse(booking.foreignDetails || 'null');
+  booking.hasIdFront = Boolean(booking.hasIdFront);
+  booking.hasIdBack = Boolean(booking.hasIdBack);
+  const { missingDetails } = require('./guest.helper');
+  booking.registerMissing = missingDetails({ ...booking, phone: booking.customerPhone, address: booking.customerAddress, idFront: booking.hasIdFront }, booking);
   return { ...booking, nights, charges, payments, invoice: invoice || null, bill };
 };
 
@@ -168,7 +174,7 @@ const pick = (body, keys) => Object.fromEntries(keys.filter((k) => body[k] !== u
 
 // validates the hotel profile fields shared by the Settings page and the setup wizard
 const cleanSettings = (body) => {
-  const data = pick(body, ['hotelName', 'address', 'phone', 'email', 'gstin', 'checkInTime', 'checkOutTime', 'roomGstLow', 'roomGstHigh', 'gstThreshold', 'bookingPrefix', 'invoicePrefix', 'logoPath', 'policy', 'upiId']);
+  const data = pick(body, ['hotelName', 'address', 'phone', 'email', 'gstin', 'checkInTime', 'checkOutTime', 'roomGstLow', 'roomGstHigh', 'gstThreshold', 'bookingPrefix', 'invoicePrefix', 'logoPath', 'policy', 'upiId', 'ownerPhone', 'ownerEmail', 'summaryTime']);
   ['roomGstLow', 'roomGstHigh', 'gstThreshold'].forEach((k) => {
     if (data[k] !== undefined) data[k] = money(data[k], k);
   });
@@ -181,6 +187,9 @@ const cleanSettings = (body) => {
     if (!/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(data.gstin)) throw new HotelError('GSTIN is not valid');
   }
   if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) throw new HotelError('Email is not valid');
+  if (data.ownerEmail && !/^\S+@\S+\.\S+$/.test(data.ownerEmail)) throw new HotelError("Owner's email is not valid");
+  if (data.ownerPhone && String(data.ownerPhone).replace(/\D/g, '').length < 10) throw new HotelError("Owner's WhatsApp number should have at least 10 digits");
+  if (data.summaryTime !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.summaryTime || '')) throw new HotelError('Summary time should look like 22:00');
   if (data.upiId && !/^[A-Za-z0-9._-]{2,}@[A-Za-z0-9]{2,}$/.test(data.upiId)) throw new HotelError('UPI id should look like name@bank');
   if (data.logoPath && !/^File\/[\w./-]+$/.test(String(data.logoPath).replace(/\\/g, '/'))) throw new HotelError('Logo path is not valid');
   if (data.logoPath) data.logoPath = String(data.logoPath).replace(/\\/g, '/');

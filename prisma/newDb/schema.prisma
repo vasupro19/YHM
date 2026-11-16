@@ -100,6 +100,10 @@ model HotelSetting {
   policy        String?   @newdb.Text
   onboardedAt   DateTime?
   upiId         String?
+  ownerPhone    String?
+  ownerEmail    String?
+  summaryTime   String   @default("22:00")
+  lastSummaryOn String?
   updatedAt     DateTime? @updatedAt
 }
 
@@ -157,6 +161,13 @@ model Customer {
   idType      String?
   idNumber    String?
   notes       String?   @newdb.Text
+  nationality String?
+  gender      String?
+  dob         DateTime? @newdb.Date
+  careOf      String?
+  foreignDetails Json?
+  idFront     String?
+  idBack      String?
   createdAt   DateTime? @default(now())
   updatedAt   DateTime? @updatedAt
 
@@ -181,6 +192,13 @@ model Booking {
   checkedOutAt  DateTime?
   createdBy     Int?
   shareToken    String?   @unique
+  comingFrom    String?
+  goingTo       String?
+  purpose       String?
+  otherGuests   String?   @newdb.Text
+  precheckinAt  DateTime?
+  formCSubmittedAt DateTime?
+  formCRef      String?
   createdAt     DateTime? @default(now())
   updatedAt     DateTime? @updatedAt
 
@@ -231,8 +249,26 @@ model Payment {
   note      String?   @newdb.Text
   paidAt    DateTime  @default(now())
   createdBy Int?
+  cashCloseId Int?
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([cashCloseId])
+  @@index([paidAt])
+}
+
+model CashClose {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  userName     String?
+  closedAt     DateTime @default(now())
+  expected     Decimal  @newdb.Decimal(12, 2)
+  counted      Decimal  @newdb.Decimal(12, 2)
+  difference   Decimal  @newdb.Decimal(12, 2)
+  paymentCount Int      @default(0)
+  note         String?  @newdb.Text
+
+  @@index([userId, closedAt])
 }
 
 model Invoice {

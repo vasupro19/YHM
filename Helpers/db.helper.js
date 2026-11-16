@@ -86,6 +86,10 @@ async function getDynamicConnectionForDatabase(dbName) {
       dateStrings: ['DATE'], // DATE columns come back as 'YYYY-MM-DD', never shifted by timezone
       decimalNumbers: true,
     });
+    // NOW() / CURRENT_TIMESTAMP defaults must use the same clock as the app (Indian time), or a payment
+    // saved by a column default and a check-in saved by the app would be 5½ hours apart
+    const tz = process.env.DB_TIME_ZONE || '+05:30';
+    (pool.pool || pool).on('connection', (conn) => conn.query(`SET time_zone = '${tz.replace(/[^+\-:\w/]/g, '')}'`));
     tenantPools.set(dbName, pool);
   }
   // controllers call end() when done; the pool stays open, so end() is a no-op

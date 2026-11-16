@@ -33,3 +33,6 @@ apiDoc.rest
 !env.example
 backups/
 prisma/temp/
+
+# guest ID photos (never public, never in git)
+Private/

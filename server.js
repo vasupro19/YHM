@@ -1,3 +1,5 @@
+// the product is for Indian hotels: 'today', bill times and the night summary follow Indian time
+process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { testDatabaseConnection } = require('./Database/connection');
@@ -21,6 +23,7 @@ const httpServer = server.listen(PORT || 1310, async (error) => {
   }
   try {
     testDatabaseConnection();
+    require('./Helpers/nightlySummary').startNightlySummary();
     console.log(`server started on port: [${PORT || 1310}] with [${NODE_ENV.toUpperCase()} --env] [${IST('date')} ${IST('time')}]`);
   } catch (connectionError) {
     console.log('Unable to connect --DATABASE, Killing app :/(', connectionError);

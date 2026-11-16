@@ -38,6 +38,9 @@ const buildMessages = (b, s) => {
       `Hello ${guest}, thank you for staying at ${hotel}.\n\n` +
       `${b.invoice ? `Invoice ${b.invoice.invoiceNumber}\n` : `Booking ${b.bookingNumber}\n`}Total: ${money(bill.total)}\nPaid: ${money(bill.paid)}\n${bill.balance > 0 ? `Balance: ${money(bill.balance)}\n` : 'Balance: nil\n'}\n` +
       `Your bill: {{BILL_LINK}}${sign}`,
+    precheckin:
+      `Hello ${guest}, to save time at the front desk, please fill in your check-in details and add a photo of your ID before you arrive at ${hotel}.\n\n` +
+      `Booking: ${b.bookingNumber}\nCheck-in: ${day(b.checkIn)}\n\nIt takes two minutes: {{CHECKIN_LINK}}\n\nEach adult guest needs a government photo ID (Aadhaar, passport, driving licence or voter ID).${sign}`,
     thanks:
       `Hello ${guest}, thank you for choosing ${hotel}. We hope you had a comfortable stay and would love to see you again.\n\nIf you have a moment, tell us how we did. Your feedback helps us improve.${sign}`
   };
@@ -48,6 +51,7 @@ const SUBJECTS = {
   reminder: (b, s) => `Your stay at ${s.hotelName || 'the hotel'} starts ${day(b.checkIn)}`,
   payment: (b, s) => `Payment due for booking ${b.bookingNumber}`,
   bill: (b, s) => `Your bill from ${s.hotelName || 'the hotel'}${b.invoice ? ` (${b.invoice.invoiceNumber})` : ''}`,
+  precheckin: (b, s) => `Online check-in for your stay at ${s.hotelName || 'the hotel'} (${b.bookingNumber})`,
   thanks: (b, s) => `Thank you for staying at ${s.hotelName || 'our hotel'}`
 };
 
