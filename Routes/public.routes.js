@@ -33,7 +33,7 @@ router.get('/bill/:token', async (req, res) => {
           bookingNumber: b.bookingNumber, status: b.status, checkIn: b.checkIn, checkOut: b.checkOut, adults: b.adults, children: b.children,
           guestName: b.customerName, companyName: b.companyName, guestGstin: b.customerGstin, roomTypeName: b.roomTypeName, roomNumber: b.roomNumber,
           invoiceNumber: b.invoice?.invoiceNumber || null, invoiceDate: b.invoice?.issuedAt || null,
-          bill: b.bill, payments: b.payments.map((p) => ({ amount: p.amount, method: p.method, paidAt: p.paidAt }))
+          bill: b.bill, payments: b.payments.map((p) => ({ amount: p.amount, method: p.method, paidAt: p.paidAt, receiptNo: require('../Helpers/messages').receiptNo(b, p) }))
         }
       }
     });

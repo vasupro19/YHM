@@ -11,7 +11,12 @@ const waNumber = (phone) => {
   return digits;
 };
 
-const buildMessages = (b, s) => {
+const METHOD = { CASH: 'cash', UPI: 'UPI', CARD: 'card', BANK: 'bank transfer', OTHER: 'other' };
+const stamp = (v) => new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+// receipt numbers never change: booking number + payment id
+const receiptNo = (b, p) => `R-${b.bookingNumber}-${p.id}`;
+
+const buildMessages = (b, s, opts = {}) => {
   const hotel = s.hotelName || 'our hotel';
   const guest = b.customerName.split(' ')[0];
   const nights = b.nights.length;
@@ -38,6 +43,18 @@ const buildMessages = (b, s) => {
       `Hello ${guest}, thank you for staying at ${hotel}.\n\n` +
       `${b.invoice ? `Invoice ${b.invoice.invoiceNumber}\n` : `Booking ${b.bookingNumber}\n`}Total: ${money(bill.total)}\nPaid: ${money(bill.paid)}\n${bill.balance > 0 ? `Balance: ${money(bill.balance)}\n` : 'Balance: nil\n'}\n` +
       `Your bill: {{BILL_LINK}}${sign}`,
+    receipt: (() => {
+      const p = (opts.paymentId && b.payments.find((x) => x.id === Number(opts.paymentId))) || b.payments[b.payments.length - 1];
+      if (!p) return `Hello ${guest}, no payment has been recorded yet for booking ${b.bookingNumber} at ${hotel}.${sign}`;
+      return (
+        `Payment receipt from ${hotel}\n\n` +
+        `Receipt no: ${receiptNo(b, p)}\nDate: ${stamp(p.paidAt)}\nReceived from: ${b.customerName}\n` +
+        `Amount: ${money(p.amount)} by ${METHOD[p.method] || p.method}${p.reference ? ` (ref ${p.reference})` : ''}\n\n` +
+        `For booking ${b.bookingNumber}, room ${b.roomNumber}, ${day(b.checkIn)} to ${day(b.checkOut)}\n` +
+        `Bill total: ${money(bill.total)}\nPaid so far: ${money(bill.paid)}\n${bill.balance > 0 ? `Balance: ${money(bill.balance)}` : 'Fully paid. Thank you.'}\n\n` +
+        `Bill and receipts: {{BILL_LINK}}${sign}`
+      );
+    })(),
     precheckin:
       `Hello ${guest}, to save time at the front desk, please fill in your check-in details and add a photo of your ID before you arrive at ${hotel}.\n\n` +
       `Booking: ${b.bookingNumber}\nCheck-in: ${day(b.checkIn)}\n\nIt takes two minutes: {{CHECKIN_LINK}}\n\nEach adult guest needs a government photo ID (Aadhaar, passport, driving licence or voter ID).${sign}`,
@@ -51,8 +68,9 @@ const SUBJECTS = {
   reminder: (b, s) => `Your stay at ${s.hotelName || 'the hotel'} starts ${day(b.checkIn)}`,
   payment: (b, s) => `Payment due for booking ${b.bookingNumber}`,
   bill: (b, s) => `Your bill from ${s.hotelName || 'the hotel'}${b.invoice ? ` (${b.invoice.invoiceNumber})` : ''}`,
+  receipt: (b, s) => `Payment receipt from ${s.hotelName || 'the hotel'} (${b.bookingNumber})`,
   precheckin: (b, s) => `Online check-in for your stay at ${s.hotelName || 'the hotel'} (${b.bookingNumber})`,
   thanks: (b, s) => `Thank you for staying at ${s.hotelName || 'our hotel'}`
 };
 
-module.exports = { buildMessages, waNumber, SUBJECTS, money };
+module.exports = { buildMessages, waNumber, SUBJECTS, money, receiptNo };

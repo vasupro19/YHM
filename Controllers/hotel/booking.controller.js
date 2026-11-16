@@ -384,7 +384,7 @@ const share = handler(async (req, res, db) => {
       balance: booking.bill.balance,
       upiId: settings.upiId || '',
       hotelName: settings.hotelName || '',
-      messages: buildMessages(booking, settings)
+      messages: buildMessages(booking, settings, { paymentId: req.body?.paymentId })
     }
   });
 });
@@ -398,7 +398,7 @@ const emailGuest = handler(async (req, res, db) => {
   if (!booking.customerEmail) throw new HotelError('This guest has no email address saved');
   const settings = await H.getSettings(db);
   const token = await ensureToken(db, req.clientId, id);
-  const text = (typeof req.body.text === 'string' && req.body.text.trim() ? req.body.text : buildMessages(booking, settings)[kind]).replace(/\{\{BILL_LINK\}\}/g, `${appUrl()}/b/${token}`).replace(/\{\{CHECKIN_LINK\}\}/g, `${appUrl()}/c/${token}`).slice(0, 4000);
+  const text = (typeof req.body.text === 'string' && req.body.text.trim() ? req.body.text : buildMessages(booking, settings, { paymentId: req.body?.paymentId })[kind]).replace(/\{\{BILL_LINK\}\}/g, `${appUrl()}/b/${token}`).replace(/\{\{CHECKIN_LINK\}\}/g, `${appUrl()}/c/${token}`).slice(0, 4000);
   const escape = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;white-space:pre-line">${escape(text).replace(/(https?:\/\/\S+)/g, '<a href="$1">$1</a>')}</div>`;
   let info;
