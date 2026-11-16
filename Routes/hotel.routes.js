@@ -11,6 +11,8 @@ const activity = require('../Controllers/hotel/activity.controller');
 const setup = require('../Controllers/hotel/setup.controller');
 const control = require('../Controllers/hotel/control.controller');
 const reg = require('../Controllers/hotel/register.controller');
+const gst = require('../Controllers/hotel/gst.controller');
+const partner = require('../Controllers/partner.controller');
 
 const router = express.Router();
 
@@ -73,6 +75,12 @@ router
   .post('/cash/close', need('/hotel/cash', '/hotel/bookings'), control.closeDrawer)
   .get('/cash/closes', need('/hotel/day-report'), control.closes)
   .get('/day-report', need('/hotel/day-report'), control.dayReport)
+  .get('/gst/gstr1', need('/hotel/gst'), gst.gstr1)
+
+  // travel agencies allowed to see availability and send booking requests
+  .get('/agent-links', need('/hotel/agents'), partner.listLinks)
+  .post('/agent-links', need('/hotel/agents'), partner.createLink)
+  .put('/agent-links/:id', need('/hotel/agents'), partner.updateLink)
 
   // guest register, ID photos and Form C
   .put('/bookings/:id/guest-details', need(...FRONT, '/hotel/register'), reg.saveGuestDetails)

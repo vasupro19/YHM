@@ -119,7 +119,8 @@ const loadBooking = async (db, id) => {
   const [[booking]] = await db.query(
     `SELECT b.*, c.name AS customerName, c.type AS customerType, c.phone AS customerPhone, c.email AS customerEmail, c.companyName, c.gstin AS customerGstin, c.address AS customerAddress,
             c.nationality, c.gender, c.dob, c.careOf, c.idType, c.idNumber, c.foreignDetails, c.idFront IS NOT NULL AS hasIdFront, c.idBack IS NOT NULL AS hasIdBack,
-            r.roomNumber, r.roomTypeId, t.name AS roomTypeName
+            r.roomNumber, r.roomTypeId, t.name AS roomTypeName,
+            (SELECT a.agencyName FROM AgentLink a WHERE a.id = b.agentLinkId) AS agencyName
        FROM Booking b
        JOIN Customer c ON c.id = b.customerId
        JOIN Room r ON r.id = b.roomId

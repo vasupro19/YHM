@@ -199,6 +199,8 @@ model Booking {
   precheckinAt  DateTime?
   formCSubmittedAt DateTime?
   formCRef      String?
+  agentLinkId   Int?
+  agentRef      String?
   createdAt     DateTime? @default(now())
   updatedAt     DateTime? @updatedAt
 
@@ -211,6 +213,7 @@ model Booking {
 
   @@index([roomId, checkIn, checkOut])
   @@index([status])
+  @@index([agentLinkId])
 }
 
 model BookingNight {
@@ -335,4 +338,15 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([entity, entityId])
+}
+
+model AgentLink {
+  id         Int       @id @default(autoincrement())
+  agencyName String
+  contact    String?
+  keyHash    String    @unique
+  keyHint    String
+  active     Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
 }

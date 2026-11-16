@@ -73,7 +73,8 @@ const listBookings = handler(async (req, res, db) => {
   }
   const [rows] = await db.query(
     `SELECT b.id, b.bookingNumber, b.customerId, b.roomId, b.checkIn, b.checkOut, b.adults, b.children, b.status, b.source, b.discount, b.createdAt,
-            c.name AS customerName, c.phone AS customerPhone, c.type AS customerType, c.companyName, r.roomNumber, t.name AS roomTypeName
+            c.name AS customerName, c.phone AS customerPhone, c.type AS customerType, c.companyName, r.roomNumber, t.name AS roomTypeName,
+            (SELECT a.agencyName FROM AgentLink a WHERE a.id = b.agentLinkId) AS agencyName
        FROM Booking b JOIN Customer c ON c.id = b.customerId JOIN Room r ON r.id = b.roomId JOIN RoomType t ON t.id = r.roomTypeId
       ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY b.checkIn DESC, b.id DESC LIMIT 500`,
     values
@@ -209,7 +210,18 @@ const updateBooking = handler(async (req, res, db) => {
   Response.success(res, { data: updated, message: 'Booking updated' });
 });
 
-const nextInvoiceNumber = async (conn, settings, id) => `${settings.invoicePrefix}-${new Date().getFullYear()}-${String(id).padStart(5, '0')}`;
+// GST needs invoice numbers that run in order, without gaps, within a financial year (April to March):
+// INV-2026-00001, INV-2026-00002 … for 2026-27. The lock keeps two checkouts from taking the same number.
+const nextInvoiceNumber = async (conn, settings) => {
+  const now = new Date();
+  const fy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const stem = `${settings.invoicePrefix}-${fy}-`;
+  const [[last]] = await conn.query(
+    'SELECT MAX(CAST(SUBSTRING(invoiceNumber, ?) AS UNSIGNED)) AS n FROM Invoice WHERE invoiceNumber LIKE ? FOR UPDATE',
+    [stem.length + 1, `${stem}%`]
+  );
+  return `${stem}${String((last?.n || 0) + 1).padStart(5, '0')}`;
+};
 
 const changeStatus = handler(async (req, res, db) => {
   const id = Number(req.params.id);
@@ -253,7 +265,7 @@ const changeStatus = handler(async (req, res, db) => {
         const full = await H.loadBooking(conn, id);
         const bill = full.bill;
         await H.insert(conn, 'Invoice', {
-          invoiceNumber: await nextInvoiceNumber(conn, settings, id),
+          invoiceNumber: await nextInvoiceNumber(conn, settings),
           bookingId: id,
           roomSubtotal: bill.roomSubtotal,
           chargesSubtotal: bill.chargesSubtotal,

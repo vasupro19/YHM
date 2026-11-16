@@ -17,8 +17,10 @@ const data = [
   // ---- insights ----
   { label: 'Day report', icon: 'Assessment', url: '/hotel/day-report', group: 'reports' },
   { label: 'Reports', icon: 'Assessment', url: '/hotel/reports', group: 'reports' },
+  { label: 'GST returns', icon: 'Assessment', url: '/hotel/gst', group: 'reports' },
   // ---- setup ----
   { label: 'Hotel settings', icon: 'Settings', url: '/hotel/settings', group: 'master' },
+  { label: 'Travel agents', icon: 'People', url: '/hotel/agents', group: 'master' },
   { label: 'Activity log', icon: 'History', url: '/hotel/activity', group: 'master' },
   { label: 'Import data', icon: 'Upload', url: '/hotel/import', group: 'master' },
   { label: 'Role', icon: 'BlurOn', url: '/master/role', group: 'master' },

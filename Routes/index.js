@@ -9,6 +9,7 @@ const TaskRoute = require('./task.routes');
 const FileOperationRoute = require('./fileOperation.routes');
 const HotelRoute = require('./hotel.routes');
 const PublicRoute = require('./public.routes');
+const PartnerRoute = require('./partner.routes');
 const app = require('../app');
 
 //! always remove  before pushing to server
@@ -24,6 +25,7 @@ function appRouter() {
   app.use('/v1/fileOperation', FileOperationRoute);
   app.use('/v1/hotel', HotelRoute);
   app.use('/v1/public', PublicRoute);
+  app.use('/v1/partner', PartnerRoute);
 
   //\\ ==============================|| END: UI MASTERS ROUTES ||============================== //\\
 }
