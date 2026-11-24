@@ -24,6 +24,7 @@ const httpServer = server.listen(PORT || 1310, async (error) => {
   try {
     testDatabaseConnection();
     require('./Helpers/nightlySummary').startNightlySummary();
+    require('./Helpers/emailBookings').startEmailBookings();
     console.log(`server started on port: [${PORT || 1310}] with [${NODE_ENV.toUpperCase()} --env] [${IST('date')} ${IST('time')}]`);
   } catch (connectionError) {
     console.log('Unable to connect --DATABASE, Killing app :/(', connectionError);

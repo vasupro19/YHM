@@ -13,6 +13,7 @@ const control = require('../Controllers/hotel/control.controller');
 const reg = require('../Controllers/hotel/register.controller');
 const gst = require('../Controllers/hotel/gst.controller');
 const partner = require('../Controllers/partner.controller');
+const emailBooking = require('../Controllers/hotel/emailBooking.controller');
 
 const router = express.Router();
 
@@ -81,6 +82,13 @@ router
   .get('/agent-links', need('/hotel/agents'), partner.listLinks)
   .post('/agent-links', need('/hotel/agents'), partner.createLink)
   .put('/agent-links/:id', need('/hotel/agents'), partner.updateLink)
+
+  // booking emails from OTAs and agents, read by AI
+  .get('/email-bookings', need('/hotel/settings', '/hotel/bookings'), emailBooking.overview)
+  .post('/email-bookings/paste', need('/hotel/settings', '/hotel/bookings'), emailBooking.paste)
+  .post('/email-bookings/:id/handled', need('/hotel/settings', '/hotel/bookings'), emailBooking.dismiss)
+  .put('/email-bookings/settings', need('/hotel/settings'), emailBooking.saveSettings)
+  .post('/email-bookings/check', need('/hotel/settings', '/hotel/bookings'), emailBooking.checkNow)
 
   // guest register, ID photos and Form C
   .put('/bookings/:id/guest-details', need(...FRONT, '/hotel/register'), reg.saveGuestDetails)

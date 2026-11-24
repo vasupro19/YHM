@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.352.0",
     "@aws-sdk/s3-request-presigner": "^3.354.0",
+    "@google/genai": "^3.6.1",
     "@prisma/client": "^6.10.1",
     "aws-sdk": "^2.1397.0",
     "axios": "^0.27.2",
@@ -30,8 +31,10 @@
     "express-rate-limit": "^5.5.1",
     "firebase-admin": "^11.10.1",
     "helmet": "^4.6.0",
+    "imapflow": "^2.12.2",
     "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.0",
+    "mailparser": "^3.15.0",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.14.1",
     "nodemailer": "^6.9.3",

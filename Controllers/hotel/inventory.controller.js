@@ -6,8 +6,12 @@ const { audit } = require('../../Helpers/audit');
 const HK_STATUSES = ['CLEAN', 'DIRTY', 'INSPECTED'];
 
 // ---------- settings ----------
+// the booking-email password and Gemini key never leave the server (they have their own screen)
+const SECRET = ['mailPass', 'geminiKey', 'mailUidValidity', 'mailLastUid'];
+const publicSettings = (s) => Object.fromEntries(Object.entries(s).filter(([k]) => !SECRET.includes(k)));
+
 const getSettings = handler(async (req, res, db) => {
-  Response.success(res, { data: await H.getSettings(db) });
+  Response.success(res, { data: publicSettings(await H.getSettings(db)) });
 });
 
 const updateSettings = handler(async (req, res, db) => {
@@ -15,7 +19,7 @@ const updateSettings = handler(async (req, res, db) => {
   const data = H.cleanSettings(req.body);
   await H.update(db, 'HotelSetting', data, 1);
   await audit(req, db, 'UPDATE', 'Settings', null, 'Hotel settings changed');
-  Response.success(res, { data: await H.getSettings(db), message: 'Settings saved' });
+  Response.success(res, { data: publicSettings(await H.getSettings(db)), message: 'Settings saved' });
 });
 
 // ---------- room types ----------

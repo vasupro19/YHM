@@ -104,6 +104,17 @@ model HotelSetting {
   ownerEmail    String?
   summaryTime   String   @default("22:00")
   lastSummaryOn String?
+  emailImportOn   Boolean   @default(false)
+  mailUser        String?
+  mailPass        String?   @newdb.Text
+  mailHost        String?
+  mailPort        Int?
+  mailSenders     String?   @newdb.Text
+  geminiKey       String?   @newdb.Text
+  mailUidValidity String?
+  mailLastUid     Int?
+  mailCheckedAt   DateTime?
+  mailError       String?   @newdb.Text
   updatedAt     DateTime? @updatedAt
 }
 
@@ -349,4 +360,25 @@ model AgentLink {
   active     Boolean   @default(true)
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
+}
+
+// booking emails forwarded to the hotel's YHM address, read by AI
+model EmailImport {
+  id          Int       @id @default(autoincrement())
+  messageId   String    @unique
+  via         String    @default("EMAIL")
+  fromAddress String?
+  subject     String?
+  receivedAt  DateTime?
+  kind        String
+  status      String
+  channel     String?
+  reference   String?
+  message     String?   @newdb.Text
+  data        Json?
+  bookingIds  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([channel, reference])
+  @@index([status])
 }
